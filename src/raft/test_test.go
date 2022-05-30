@@ -1131,12 +1131,10 @@ func snapcommon(t *testing.T, name string, disconnect bool, reliable bool, crash
 		if disconnect {
 			cfg.disconnect(victim)
 			cfg.one(rand.Int(), servers-1, true)
-			fmt.Println(victim, "disconnected")
 		}
 		if crash {
 			cfg.crash1(victim)
 			cfg.one(rand.Int(), servers-1, true)
-			fmt.Println(victim, "crashed")
 		}
 
 		// perhaps send enough to get a snapshot
@@ -1162,14 +1160,12 @@ func snapcommon(t *testing.T, name string, disconnect bool, reliable bool, crash
 			// reconnect a follower, who maybe behind and
 			// needs to rceive a snapshot to catch up.
 			cfg.connect(victim)
-			fmt.Println("all server connected after disconnected")
 			cfg.one(rand.Int(), servers, true)
 			leader1 = cfg.checkOneLeader()
 		}
 		if crash {
 			cfg.start1(victim, cfg.applierSnap)
 			cfg.connect(victim)
-			fmt.Println("all server connected after crashed")
 			cfg.one(rand.Int(), servers, true)
 			leader1 = cfg.checkOneLeader()
 		}
@@ -1227,14 +1223,11 @@ func TestSnapshotAllCrash2D(t *testing.T) {
 			cfg.crash1(i)
 		}
 
-		fmt.Println("all crashed")
-
 		// revive all
 		for i := 0; i < servers; i++ {
 			cfg.start1(i, cfg.applierSnap)
 			cfg.connect(i)
 		}
-		fmt.Println("all revived")
 
 		index2 := cfg.one(rand.Int(), servers, true)
 		if index2 < index1+1 {

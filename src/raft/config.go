@@ -205,7 +205,7 @@ func (cfg *config) ingestSnap(i int, snapshot []byte, index int) string {
 	cfg.logs[i] = map[int]interface{}{}
 	for j := 0; j < len(xlog); j++ {
 		cfg.logs[i][j] = xlog[j]
-		fmt.Printf("instance %d index %d command %v\n", i, j, xlog[j])
+		// fmt.Printf("instance %d index %d command %v\n", i, j, xlog[j])
 	}
 	cfg.lastApplied[i] = lastIncludedIndex
 	return ""

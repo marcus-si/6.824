@@ -235,7 +235,7 @@ func getRemainLogs(rf *Raft, lastIncludedIndex int) []Log {
 }
 
 func (rf *Raft) readSnapshot() {
-	fmt.Println(rf.me, "read snapshot")
+	// fmt.Println(rf.me, "read snapshot")
 	persistedSnapshot := rf.persister.ReadSnapshot()
 	lastIncludedIndex, lastIncludedeTerm, _, ok := rf.decodeSnapshot(persistedSnapshot)
 	if ok {
@@ -322,7 +322,7 @@ func (rf *Raft) InstallSnapshot(args *SnapshotArgs, reply *SnapshotReply) {
 	}
 	updateSnapshot(rf, args.LastIncludedIndex, args.LastIncludedTerm, args.Data)
 
-	fmt.Printf("installed snapshot: instance %d, leader %d, lastIncludedIndex %d, lastAppliedIndex %d, leader included term %d, logs %v\n", rf.me, args.LeaderId, rf.lastIncludedIndex, rf.lastAppliedIndex, args.LastIncludedTerm, rf.logs)
+	// fmt.Printf("installed snapshot: instance %d, leader %d, lastIncludedIndex %d, lastAppliedIndex %d, leader included term %d, logs %v\n", rf.me, args.LeaderId, rf.lastIncludedIndex, rf.lastAppliedIndex, args.LastIncludedTerm, rf.logs)
 	rf.mu.Unlock()
 }
 
@@ -333,7 +333,7 @@ func updateSnapshot(rf *Raft, lastIncludedIndex int, lastIncludedTerm int, snaps
 	rf.lastIncludedTerm = lastIncludedTerm
 	if lastIncludedIndex > rf.nextCommitIndex {
 		rf.nextCommitIndex = lastIncludedIndex
-		fmt.Printf("instance %d update nextcommitindex after replay snapshot\n", rf.me)
+		// fmt.Printf("instance %d update nextcommitindex after replay snapshot\n", rf.me)
 	}
 	rf.snapshot = snapshot
 	rf.applyChange()
@@ -686,7 +686,7 @@ func (rf *Raft) sendHeartBeats(shouldCheckNextHeartBeatTime bool) {
 				return
 			}
 			if reply.Success {
-				fmt.Printf("%d reply success is %v\n", sid, reply)
+				// fmt.Printf("%d reply success is %v\n", sid, reply)
 				newMatchIndex := args.PrevLogIndex + len(args.Entries)
 				logLength := getFullLogLength(rf)
 				if newMatchIndex >= logLength {
@@ -698,7 +698,7 @@ func (rf *Raft) sendHeartBeats(shouldCheckNextHeartBeatTime bool) {
 					rf.peersNextIndex[sid] = newMatchIndex + 1
 				}
 			} else if reply.LogNotMatched {
-				fmt.Println(sid, "reply not matched", args, reply)
+				// fmt.Println(sid, "reply not matched", args, reply)
 				updateNextIndex(rf, &reply, sid)
 
 			}
@@ -774,20 +774,23 @@ func (rf *Raft) startApplyChange() {
 	for !rf.killed() {
 		rf.mu.Lock()
 		if rf.lastIncludedIndex > rf.lastAppliedIndex && len(rf.snapshot) > 0 {
-			i1, t1, l1, _ := rf.decodeSnapshot(rf.snapshot)
+			// i1, t1, l1, _ := rf.decodeSnapshot(rf.snapshot)
 			snapshotMsg := rf.buildSnapshotApplyMessage(rf.lastIncludedIndex, rf.lastIncludedTerm, rf.snapshot)
 			rf.lastAppliedIndex = rf.lastIncludedIndex
-			fmt.Printf("instance %d replay snapshot, new last applied index %d, index, term and logs in snapshot %d, %d, %v\n", rf.me, rf.lastAppliedIndex, i1, t1, l1)
+			// fmt.Printf("instance %d replay snapshot, new last applied index %d, index, term and logs in snapshot %d, %d, %v\n", rf.me, rf.lastAppliedIndex, i1, t1, l1)
 			rf.mu.Unlock()
 			rf.applyChangeChan <- snapshotMsg
 			time.Sleep(10 * time.Millisecond)
 			rf.mu.Lock()
 		} else {
 			// fmt.Printf("instance %d lastAppliedIndex %d, next commit index %d,  current term %v\n", rf.me, rf.lastAppliedIndex, rf.nextCommitIndex, rf.currentTerm)
-			fullLogLength := getFullLogLength(rf)
-			for rf.lastAppliedIndex < rf.nextCommitIndex && rf.lastAppliedIndex < fullLogLength {
+			for rf.lastAppliedIndex < rf.nextCommitIndex {
+				fullLogLength := getFullLogLength(rf)
+				if rf.lastAppliedIndex >= fullLogLength {
+					break
+				}
 				// fmt.Printf("instance %d index %d , last included index %d,  logs%v\n", rf.me, rf.lastAppliedIndex+1, rf.lastIncludedIndex, rf.logs)
-				fmt.Printf("instance %d index %d command %v, current term %v\n", rf.me, rf.lastAppliedIndex+1, rf.logs[getRelativeIndex(rf, rf.lastAppliedIndex)].Command, rf.currentTerm)
+				// fmt.Printf("instance %d index %d command %v, current term %v\n", rf.me, rf.lastAppliedIndex+1, rf.logs[getRelativeIndex(rf, rf.lastAppliedIndex)].Command, rf.currentTerm)
 				index := getRelativeIndex(rf, rf.lastAppliedIndex)
 				msg := rf.buildApplyMsgForCommit(rf.logs[index].Command, rf.lastAppliedIndex+1)
 				rf.lastAppliedIndex++
@@ -854,17 +857,17 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.logs = append(rf.logs, Log{term, command})
 	// fmt.Printf("Leader %d at term %d command %v\n", rf.me, term, command)
 	rf.persist()
-	rf.sendHeartBeats(false)
+	// rf.sendHeartBeats(false)
 	rf.mu.Unlock()
 	time.Sleep(HEART_BEAT_INTERVAL / 5)
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	if !rf.killed() && term == rf.currentTerm {
-		fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, term, index, command)
+		// fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, term, index, command)
 		return index, term, isLeader
 	} else {
-		fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, rf.currentTerm, -1, command)
+		// fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, rf.currentTerm, -1, command)
 		return -1, rf.currentTerm, false
 	}
 }
