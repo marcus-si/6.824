@@ -794,7 +794,7 @@ func (rf *Raft) startApplyChange() {
 				index := getRelativeIndex(rf, rf.lastAppliedIndex)
 				msg := rf.buildApplyMsgForCommit(rf.logs[index].Command, rf.lastAppliedIndex+1)
 				rf.lastAppliedIndex++
-				rf.createSnapshot(rf.lastAppliedIndex, rf.currentTerm)
+				// rf.createSnapshot(rf.lastAppliedIndex, rf.currentTerm)
 				rf.mu.Unlock()
 				time.Sleep(10 * time.Millisecond)
 				rf.applyChangeChan <- msg
@@ -977,7 +977,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
-	rf.readSnapshot()
+	// rf.readSnapshot()
 
 	// start ticker goroutine to start elections
 	go rf.ticker()
