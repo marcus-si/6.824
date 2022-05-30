@@ -1,16 +1,10 @@
 package mr
 
-import (
-	"encoding/json"
-	"fmt"
-	"hash/fnv"
-	"log"
-	"net/rpc"
-	"os"
-	"sort"
-	"strings"
-	"time"
-)
+import "fmt"
+import "log"
+import "net/rpc"
+import "hash/fnv"
+
 
 //
 // Map functions return a slice of KeyValue.
@@ -30,123 +24,18 @@ func ihash(key string) int {
 	return int(h.Sum32() & 0x7fffffff)
 }
 
+
 //
 // main/mrworker.go calls this function.
 //
 func Worker(mapf func(string, string) []KeyValue,
 	reducef func(string, []string) string) {
-	for {
-		reply, ok := FetchTask()
-		if !ok {
-			fmt.Println("unable to contact the coordinator and quit")
-			return
-		}
-		if reply.WorkType == C || reply.TaskId == -1 {
-			fmt.Println("Work is done and quit")
-			return
-		}
-		fmt.Printf("start task %d of type %d at %v\n", reply.TaskId, reply.WorkType, time.Now())
-		if reply.WorkType == M {
-			handleMapTask(mapf, reply)
-		} else if reply.WorkType == R {
-			handleReduceTask(reducef, reply)
-		}
-	}
 
 	// Your worker implementation here.
 
 	// uncomment to send the Example RPC to the coordinator.
 	// CallExample()
 
-}
-
-func handleMapTask(mapf func(string, string) []KeyValue, reply *FetchTaskReply) {
-	content := reply.FileBody
-	kva := mapf(reply.FilePath, content)
-	hashMap := make(map[int][]KeyValue, reply.ReducerNum)
-	for _, kv := range kva {
-		reduceTaskNumber := ihash(kv.Key) % reply.ReducerNum
-		hashMap[reduceTaskNumber] = append(hashMap[reduceTaskNumber], kv)
-	}
-	completed := true
-	for key, value := range hashMap {
-		fileName := fmt.Sprintf("mr-%d-%d", reply.TaskId, key)
-		file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-		defer func() {
-			file.Close()
-		}()
-		if err == nil {
-			enc := json.NewEncoder(file)
-			for _, kv := range value {
-				enc.Encode(&kv)
-			}
-		} else {
-			completed = false
-		}
-	}
-	if completed {
-		CompleteTask(reply.TaskId, reply.WorkType, true)
-	}
-}
-
-func handleReduceTask(reducef func(string, []string) string, reply *FetchTaskReply) {
-	kva := reply.Kva
-	sort.Slice(kva, func(i, j int) bool {
-		return kva[i].Key < kva[j].Key
-	})
-	ok := reduceToFile(reducef, kva, "mr-out-"+reply.FilePath)
-	if ok {
-		CompleteTask(reply.TaskId, reply.WorkType, true)
-	}
-}
-
-func reduceToFile(reducef func(string, []string) string, kva []KeyValue, filePath string) (ok bool) {
-	var output []string
-	startKv := kva[0]
-	values := []string{startKv.Value}
-	for i := 1; i < len(kva); i++ {
-		if startKv.Key == kva[i].Key {
-			values = append(values, kva[i].Value)
-		} else {
-			occurrences := reducef(startKv.Key, values)
-			output = append(output, fmt.Sprintf("%v %v\n", startKv.Key, occurrences))
-			startKv = kva[i]
-			values = []string{startKv.Value}
-		}
-	}
-	occurrences := reducef(startKv.Key, values)
-	output = append(output, fmt.Sprintf("%v %v", startKv.Key, occurrences))
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_TRUNC|os.O_CREATE, 0644)
-	defer func() {
-		file.Close()
-	}()
-	if err != nil {
-		return false
-	}
-	_, writingErr := file.WriteString(strings.Join(output, ""))
-	return writingErr == nil
-}
-
-func FetchTask() (*FetchTaskReply, bool) {
-	args := FetchTaskArgs{WorkerId: 1}
-	reply := FetchTaskReply{}
-	ok := call("Coordinator.AssignTask", &args, &reply)
-	if !ok {
-		fmt.Printf("call failed!\n")
-	}
-	return &reply, ok
-}
-
-func CompleteTask(taskId int, workType WorkType, completed bool) *CompleteTaskReply {
-	args := CompleteTaskArgs{taskId, workType, completed}
-	reply := CompleteTaskReply{}
-	ok := call("Coordinator.CompleteTask", &args, &reply)
-	if ok {
-		fmt.Printf("completed task %d of type %d at %v\n", args.TaskId, args.WorkType, time.Now())
-	} else {
-		fmt.Printf("unable to notify Coordinator about the task[id=%d] completed\n", args.TaskId)
-	}
-	return &reply
 }
 
 //

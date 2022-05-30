@@ -773,8 +773,6 @@ func (rf *Raft) applyChange() {
 func (rf *Raft) startApplyChange() {
 	for !rf.killed() {
 		rf.mu.Lock()
-		fullLogLength := getFullLogLength(rf)
-
 		if rf.lastIncludedIndex > rf.lastAppliedIndex && len(rf.snapshot) > 0 {
 			i1, t1, l1, _ := rf.decodeSnapshot(rf.snapshot)
 			snapshotMsg := rf.buildSnapshotApplyMessage(rf.lastIncludedIndex, rf.lastIncludedTerm, rf.snapshot)
@@ -786,6 +784,7 @@ func (rf *Raft) startApplyChange() {
 			rf.mu.Lock()
 		} else {
 			// fmt.Printf("instance %d lastAppliedIndex %d, next commit index %d,  current term %v\n", rf.me, rf.lastAppliedIndex, rf.nextCommitIndex, rf.currentTerm)
+			fullLogLength := getFullLogLength(rf)
 			for rf.lastAppliedIndex < rf.nextCommitIndex && rf.lastAppliedIndex < fullLogLength {
 				// fmt.Printf("instance %d index %d , last included index %d,  logs%v\n", rf.me, rf.lastAppliedIndex+1, rf.lastIncludedIndex, rf.logs)
 				fmt.Printf("instance %d index %d command %v, current term %v\n", rf.me, rf.lastAppliedIndex+1, rf.logs[getRelativeIndex(rf, rf.lastAppliedIndex)].Command, rf.currentTerm)

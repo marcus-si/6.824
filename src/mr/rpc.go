@@ -6,10 +6,8 @@ package mr
 // remember to capitalize all names.
 //
 
-import (
-	"os"
-	"strconv"
-)
+import "os"
+import "strconv"
 
 //
 // example to show how to declare the arguments
@@ -26,36 +24,6 @@ type ExampleReply struct {
 
 // Add your RPC definitions here.
 
-type FetchTaskArgs struct {
-	WorkerId int
-}
-
-type FetchTaskReply struct {
-	WorkType   WorkType
-	FilePath   string
-	FileBody   string
-	Kva        []KeyValue
-	TaskId     int
-	ReducerNum int
-	MapTaskNum int
-}
-
-type WorkType int
-
-const (
-	M WorkType = iota
-	R
-	C //completed
-)
-
-type CompleteTaskArgs struct {
-	TaskId    int
-	WorkType  WorkType
-	Completed bool
-}
-
-type CompleteTaskReply struct {
-}
 
 // Cook up a unique-ish UNIX-domain socket name
 // in /var/tmp, for the coordinator.
@@ -66,5 +34,3 @@ func coordinatorSock() string {
 	s += strconv.Itoa(os.Getuid())
 	return s
 }
-
-const InputFilesPersistentPath = "input-files"
