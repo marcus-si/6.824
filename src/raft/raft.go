@@ -857,7 +857,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.logs = append(rf.logs, Log{term, command})
 	// fmt.Printf("Leader %d at term %d command %v\n", rf.me, term, command)
 	rf.persist()
-	rf.sendHeartBeats(false)
+	// rf.sendHeartBeats(false)
 	rf.mu.Unlock()
 	time.Sleep(10 * time.Millisecond)
 
