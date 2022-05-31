@@ -623,7 +623,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		reply.LogNotMatched = true
 		reply.FollowerLastIncludedIndex = lastIncludedIndex
 		reply.XIndex, reply.XTerm, reply.XLen = getXInfo(rf, args.PrevLogIndex, lastIncludedIndex)
-		// fmt.Printf("instance %d, args %v, my logs %v, reply %v, last included index %d\n", rf.me, args, rf.logs, reply, rf.lastIncludedIndex)
+		fmt.Printf("instance %d, args %v, my logs %v, reply %v, last included index %d\n", rf.me, args, rf.logs, reply, rf.lastIncludedIndex)
 		return
 	}
 
@@ -698,7 +698,7 @@ func (rf *Raft) sendHeartBeats(shouldCheckNextHeartBeatTime bool) {
 					rf.peersNextIndex[sid] = newMatchIndex + 1
 				}
 			} else if reply.LogNotMatched {
-				// fmt.Println(sid, "reply not matched", args, reply)
+				fmt.Println(sid, "reply not matched", args, reply)
 				updateNextIndex(rf, &reply, sid)
 
 			}
@@ -790,7 +790,7 @@ func (rf *Raft) startApplyChange() {
 					break
 				}
 				// fmt.Printf("instance %d index %d , last included index %d,  logs%v\n", rf.me, rf.lastAppliedIndex+1, rf.lastIncludedIndex, rf.logs)
-				// fmt.Printf("instance %d index %d command %v, current term %v\n", rf.me, rf.lastAppliedIndex+1, rf.logs[getRelativeIndex(rf, rf.lastAppliedIndex)].Command, rf.currentTerm)
+				fmt.Printf("instance %d index %d command %v, current term %v\n", rf.me, rf.lastAppliedIndex+1, rf.logs[getRelativeIndex(rf, rf.lastAppliedIndex)].Command, rf.currentTerm)
 				index := getRelativeIndex(rf, rf.lastAppliedIndex)
 				msg := rf.buildApplyMsgForCommit(rf.logs[index].Command, rf.lastAppliedIndex+1)
 				rf.lastAppliedIndex++
@@ -857,17 +857,17 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.logs = append(rf.logs, Log{term, command})
 	// fmt.Printf("Leader %d at term %d command %v\n", rf.me, term, command)
 	rf.persist()
-	// rf.sendHeartBeats(false)
+	rf.sendHeartBeats(false)
 	rf.mu.Unlock()
-	time.Sleep(HEART_BEAT_INTERVAL / 5)
+	time.Sleep(10 * time.Millisecond)
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	if !rf.killed() && term == rf.currentTerm {
-		// fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, term, index, command)
+		fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, term, index, command)
 		return index, term, isLeader
 	} else {
-		// fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, rf.currentTerm, -1, command)
+		fmt.Printf("Return: Leader %d at term %d, index %d, command %v\n", rf.me, rf.currentTerm, -1, command)
 		return -1, rf.currentTerm, false
 	}
 }
